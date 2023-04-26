@@ -24,6 +24,7 @@ def process(file_path):
             response = requests.get(js['photoUrl'])
             if response.status_code == 200:
                 with open(filename, 'w') as f:
+                    print("Saving file %s" % (filename))
                     f.write(response.text)
             else:
                 print('Error:', response.status_code)
@@ -36,6 +37,7 @@ class MyHandler(FileSystemEventHandler):
     def on_modified(self, event):
         # Use debounce to ignore events that occur within 0.5 seconds of each other
         if event.src_path == self.filepath:
+            print('[on modidied]', event.src_path)
             self.debounced_process(event.src_path)
 
     def debounced_process(self, src_path):
@@ -44,18 +46,19 @@ class MyHandler(FileSystemEventHandler):
             return
         self.last_event_time = now
         # Process the event here...
+        print("Processing the file...")
         process(JSONL_FILE)
 
 process(JSONL_FILE)
 
-# observer = Observer()
-# observer.schedule(MyHandler(JSONL_FILE), path=os.getcwd())
-# observer.start()
-# 
-# try:
-#     while True:
-#         time.sleep(1)
-# except KeyboardInterrupt:
-#     observer.stop()
-# observer.join()
+observer = Observer()
+observer.schedule(MyHandler(JSONL_FILE), path=os.getcwd())
+observer.start()
+
+try:
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    observer.stop()
+observer.join()
 
