@@ -1,7 +1,9 @@
 import json
 import os
 import requests
+import sys
 import time
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -21,7 +23,13 @@ def process(file_path):
         if os.path.isfile(filename):
             print("File %s already exists" % (filename))
         else:
-            response = requests.get(js['photoUrl'])
+            photo_url = ''
+            try:
+                photo_url = js['photoUrl']
+            except KeyError:
+                print('key error')
+                print(js)
+            response = requests.get(photo_url)
             if response.status_code == 200:
                 with open(filename, 'w') as f:
                     print("Saving file %s" % (filename))
@@ -31,13 +39,9 @@ def process(file_path):
 
 class MyHandler(FileSystemEventHandler):
 
-    def __init__(self, filepath):
-        self.filepath = filepath
-
     def on_modified(self, event):
         # Use debounce to ignore events that occur within 0.5 seconds of each other
-        if event.src_path == self.filepath:
-            print('[on modidied]', event.src_path)
+        if event.src_path == JSONL_FILE:
             self.debounced_process(event.src_path)
 
     def debounced_process(self, src_path):
@@ -52,7 +56,7 @@ class MyHandler(FileSystemEventHandler):
 process(JSONL_FILE)
 
 observer = Observer()
-observer.schedule(MyHandler(JSONL_FILE), path=os.getcwd())
+observer.schedule(MyHandler(), path=JSONL_FILE)
 observer.start()
 
 try:
@@ -60,5 +64,5 @@ try:
         time.sleep(1)
 except KeyboardInterrupt:
     observer.stop()
-observer.join()
 
+observer.join()
