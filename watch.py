@@ -16,12 +16,23 @@ def get_json(file_path):
     file.close()
     return jsons
 
+def download_image(url, to_file_path):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(to_file_path, 'w') as f:
+            print("Saving file %s" % (to_file_path))
+            f.write(response.text)
+    else:
+        print('Error:', response.status_code)
+
+
 def process(file_path):
     jsons = get_json(file_path)
     for js in jsons:
-        filename = './data/photo-%s.jpg' % (js['timestamp'])
-        if os.path.isfile(filename):
-            print("File %s already exists" % (filename))
+        filename = js['fileName']
+        filepath = os.path.join(os.path.dirname(JSONL_FILE), filename)
+        if os.path.isfile(filepath):
+            print("File '%s' already exists" % (filename))
         else:
             photo_url = ''
             try:
@@ -29,13 +40,7 @@ def process(file_path):
             except KeyError:
                 print('key error')
                 print(js)
-            response = requests.get(photo_url)
-            if response.status_code == 200:
-                with open(filename, 'w') as f:
-                    print("Saving file %s" % (filename))
-                    f.write(response.text)
-            else:
-                print('Error:', response.status_code)
+            download_image(photo_url, filepath)
 
 class MyHandler(FileSystemEventHandler):
 
@@ -53,8 +58,10 @@ class MyHandler(FileSystemEventHandler):
         print("Processing the file...")
         process(JSONL_FILE)
 
+# Initial run:
 process(JSONL_FILE)
 
+# Then watch for changes:
 observer = Observer()
 observer.schedule(MyHandler(), path=JSONL_FILE)
 observer.start()
